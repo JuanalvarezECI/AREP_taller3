@@ -1,30 +1,32 @@
 package edu.escuelaing.arem.ASE.app;
 
-import edu.escuelaing.arem.ASE.app.Annotations.GetMapping;
-import edu.escuelaing.arem.ASE.app.Annotations.RESTcontroller;
-import edu.escuelaing.arem.ASE.app.Annotations.RequestParam;
+import edu.escuelaing.arem.ASE.app.Annotations.*;
 import edu.escuelaing.arem.ASE.app.Server.SimpleWebServer;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class MicroSpringboot {
+public class MicroSpringboot{
     private static final Map<String, Method> services = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
-        String className = args[0];
-        Class<?> clazz = Class.forName(className);
-
-        if (clazz.isAnnotationPresent(RESTcontroller.class)) {
+        List<Class<?>> classes = ClasspathScanner.findAnnotatedClasses("edu.escuelaing.arem.ASE.app", RESTcontroller.class);
+        for (Class<?> clazz : classes) {
+            System.out.println("Loading class: " + clazz.getName());
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(GetMapping.class)) {
                     String path = method.getAnnotation(GetMapping.class).value();
+                    System.out.println("Registering GET method: " + path);
+                    services.put(path, method);
+                } else if (method.isAnnotationPresent(RequestMapping.class)) {
+                    String path = method.getAnnotation(RequestMapping.class).value();
+                    System.out.println("Registering REQUEST method: " + path);
                     services.put(path, method);
                 }
             }
         }
-
         // Start the web server
         SimpleWebServer server = new SimpleWebServer(8080);
         server.start();
